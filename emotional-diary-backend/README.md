@@ -133,3 +133,67 @@ Authorization: Bearer TU_TOKEN_AQUÍ
 ### Obtener resumen mensual
 GET http://localhost:5000/api/stats/summary?month=06&year=2025
 Authorization: Bearer TU_TOKEN_AQUÍ
+
+
+### test 
+dependencias usadas 
+- mocha
+- chai
+- sinon
+
+Instálalas con el siguiente comando:
+npm install --save-dev mocha chai sinon
+
+Si deseas medir cobertura de código esto es opcional 
+npm install --save-dev nyc
+
+## 📁 Ubicación de las pruebas
+
+Las pruebas están ubicadas en la carpeta:
+/test/
+  └── authController.test.js
+
+Estas pruebas cubren los siguientes métodos:
+- register (registro de usuario)
+- login (inicio de sesión)
+
+se usaron mocks para evitar tocar directamente la base de datos o los servicios externos ya sea (JWT o bcrypt)
+
+## 🧪 Ejecutar las pruebas
+
+Desde la raiz del proyecto en la terminal ejecuta : npm test
+se podra observar la salida del auth controller 
+Auth Controller Tests
+    register
+      ✔ debe registrar un usuario exitosamente y devolver token
+      ✔ debe manejar errores durante el registro (148ms)
+    login
+      ✔ debe iniciar sesión si el correo y contraseña coinciden
+      ✔ debe devolver error si el usuario no existe
+      ✔ debe devolver error si la contraseña es incorrecta
+      ✔ debe manejar errores internos
+
+opcional si se quiere ver el % del codigo ejecuta : npm run test:coverage
+
+ Tablas sincronizadas correctamente
+--------------------|---------|----------|---------|---------|-------------------
+File                | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+--------------------|---------|----------|---------|---------|-------------------
+All files           |   93.87 |    83.33 |    62.5 |   93.61 |                  
+ config             |     100 |       50 |     100 |     100 |                  
+  db.js             |     100 |       50 |     100 |     100 | 5                
+ controllers        |     100 |      100 |     100 |     100 |                  
+  authController.js |     100 |      100 |     100 |     100 |                  
+ models             |   93.75 |      100 |      75 |   93.75 |                  
+  DailyEntry.js     |     100 |      100 |     100 |     100 |                  
+  User.js           |     100 |      100 |     100 |     100 |                  
+  index.js          |      90 |      100 |      50 |      90 | 18               
+ services           |   66.66 |      100 |       0 |   66.66 |                  
+  jwtService.js     |   66.66 |      100 |       0 |   66.66 | 5,9              
+--------------------|---------|----------|---------|---------|------------------- 
+aparecera esto al ejecutar el comando 
+yo le realice del metodo register y login que va en la carpeta authController 
+
+- Cubren todos los casos posibles:
+  - Caso feliz (funcionamiento esperado)
+  - Errores (usuario no encontrado, contraseña incorrecta, errores internos)
