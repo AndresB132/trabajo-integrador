@@ -176,21 +176,17 @@ Auth Controller Tests
 opcional si se quiere ver el % del codigo ejecuta : npm run test:coverage
 
  Tablas sincronizadas correctamente
---------------------|---------|----------|---------|---------|-------------------
-File                | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
---------------------|---------|----------|---------|---------|-------------------
-All files           |   93.87 |    83.33 |    62.5 |   93.61 |                  
- config             |     100 |       50 |     100 |     100 |                  
-  db.js             |     100 |       50 |     100 |     100 | 5                
- controllers        |     100 |      100 |     100 |     100 |                  
-  authController.js |     100 |      100 |     100 |     100 |                  
- models             |   93.75 |      100 |      75 |   93.75 |                  
-  DailyEntry.js     |     100 |      100 |     100 |     100 |                  
-  User.js           |     100 |      100 |     100 |     100 |                  
-  index.js          |      90 |      100 |      50 |      90 | 18               
- services           |   66.66 |      100 |       0 |   66.66 |                  
-  jwtService.js     |   66.66 |      100 |       0 |   66.66 | 5,9              
---------------------|---------|----------|---------|---------|------------------- 
+--------------------------|---------|----------|---------|---------|-------------------
+File                      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+--------------------------|---------|----------|---------|---------|-------------------
+config/db.js             |   100   |    50    |   100   |   100   |                 5
+controllers/authController.js |   100   |    100   |   100   |   100   |
+models/DailyEntry.js     |   100   |    100   |   100   |   100   |
+models/User.js           |   100   |    100   |   100   |   100   |
+models/index.js          |    90   |    100   |    50   |    90   |                18
+services/jwtService.js   |   66.66 |    100   |     0   |   66.66 |                 5
+--------------------------|---------|----------|---------|---------|-------------------
+All files                 |   93.87 |   83.33  |   62.5  |   93.61 |
 aparecera esto al ejecutar el comando 
 yo le realice del metodo register y login que va en la carpeta authController 
 
