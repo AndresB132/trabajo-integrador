@@ -1,13 +1,14 @@
 const bcrypt = require('bcryptjs');
 const { User } = require('../models');
-const { generateToken } = require('../services/jwtService');
+const jwtService = require('../services/jwtService');
 
 exports.register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ username, email, password: hashedPassword });
-    const token = generateToken(user);
+    // Aquí uso jwtService.generateToken en vez de generateToken
+    const token = jwtService.generateToken(user);
     res.status(201).json({ user, token });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -23,7 +24,8 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Contraseña incorrecta' });
 
-    const token = generateToken(user);
+    // Aquí también uso jwtService.generateToken
+    const token = jwtService.generateToken(user);
     res.json({ user, token });
   } catch (error) {
     res.status(500).json({ error: error.message });
