@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Diario Emocional Backend",
-    "description": "API del backend del diario emocional",
+    "description": "API completa del backend del diario emocional con CRUD de entradas",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -17,6 +17,37 @@
     }
   ],
   "item": [
+    {
+      "name": "🔍 Verificación",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test Database",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test-db",
+              "host": ["{{base_url}}"],
+              "path": ["test-db"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
     {
       "name": "🔐 Autenticación",
       "item": [
@@ -40,7 +71,22 @@
               "path": ["auth", "register"]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.user && response.user.id) {",
+                  "        pm.collectionVariables.set('user_id', response.user.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Login",
@@ -67,7 +113,7 @@
       ]
     },
     {
-      "name": "📝 Entradas",
+      "name": "📝 Entradas - CRUD Completo",
       "item": [
         {
           "name": "Crear Entrada",
@@ -81,7 +127,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"mood\": \"feliz\",\n  \"description\": \"Día productivo\",\n  \"activities\": [\"trabajo\", \"ejercicio\"],\n  \"energyLevel\": 8,\n  \"stressLevel\": 2\n}"
+              "raw": "{\n  \"emotion_score\": 8,\n  \"description\": \"Día productivo\",\n  \"activities\": [\"trabajo\", \"ejercicio\"]\n}"
             },
             "url": {
               "raw": "{{base_url}}/entries",
@@ -89,23 +135,25 @@
               "path": ["entries"]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Obtener Entradas",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/entries",
-              "host": ["{{base_url}}"],
-              "path": ["entries"]
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.entry && response.entry.id) {",
+                  "        pm.collectionVariables.set('entry_id', response.entry.id);",
+                  "    }",
+                  "}"
+                ]
+              }
             }
-          },
-          "response": []
+          ]
         },
         {
-          "name": "Obtener Entrada Específica",
+          "name": "Obtener Entrada por ID",
           "request": {
             "method": "GET",
             "header": [],
@@ -129,7 +177,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"mood\": \"tranquilo\",\n  \"description\": \"Actualización\",\n  \"activities\": [\"lectura\", \"música\"],\n  \"energyLevel\": 6,\n  \"stressLevel\": 3\n}"
+              "raw": "{\n  \"emotion_score\": 9,\n  \"description\": \"Día súper productivo\",\n  \"activities\": [\"trabajo\", \"ejercicio\", \"música\"]\n}"
             },
             "url": {
               "raw": "{{base_url}}/entries/{{entry_id}}",
@@ -151,6 +199,29 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Obtener Entradas por Mes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/entries?month=8&year=2025",
+              "host": ["{{base_url}}"],
+              "path": ["entries"],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "8"
+                },
+                {
+                  "key": "year",
+                  "value": "2025"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -158,27 +229,24 @@
       "name": "📊 Estadísticas",
       "item": [
         {
-          "name": "Estadísticas Generales",
+          "name": "Estadísticas Mensuales",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/stats",
+              "raw": "{{base_url}}/stats/monthly?month=8&year=2025",
               "host": ["{{base_url}}"],
-              "path": ["stats"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Tendencias de Estado de Ánimo",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/stats/mood-trends",
-              "host": ["{{base_url}}"],
-              "path": ["stats", "mood-trends"]
+              "path": ["stats", "monthly"],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "8"
+                },
+                {
+                  "key": "year",
+                  "value": "2025"
+                }
+              ]
             }
           },
           "response": []
@@ -186,30 +254,70 @@
       ]
     },
     {
-      "name": "🔍 Pruebas",
+      "name": "🧪 Datos de Prueba",
       "item": [
         {
-          "name": "Health Check",
+          "name": "Entrada Feliz",
           "request": {
-            "method": "GET",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emotion_score\": 9,\n  \"description\": \"¡Excelente día!\",\n  \"activities\": [\"ejercicio\", \"lectura\", \"música\"]\n}"
+            },
             "url": {
-              "raw": "{{base_url}}/health",
+              "raw": "{{base_url}}/entries",
               "host": ["{{base_url}}"],
-              "path": ["health"]
+              "path": ["entries"]
             }
           },
           "response": []
         },
         {
-          "name": "Test Base de Datos",
+          "name": "Entrada Neutral",
           "request": {
-            "method": "GET",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emotion_score\": 5,\n  \"description\": \"Día normal\",\n  \"activities\": [\"trabajo\"]\n}"
+            },
             "url": {
-              "raw": "{{base_url}}/test-db",
+              "raw": "{{base_url}}/entries",
               "host": ["{{base_url}}"],
-              "path": ["test-db"]
+              "path": ["entries"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Entrada Triste",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emotion_score\": 3,\n  \"description\": \"Día difícil\",\n  \"activities\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/entries",
+              "host": ["{{base_url}}"],
+              "path": ["entries"]
             }
           },
           "response": []

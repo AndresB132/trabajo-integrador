@@ -28,6 +28,72 @@ exports.createEntry = async (req, res) => {
   }
 };
 
+exports.getEntryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.user || !req.user.id) {
+      return res.status(400).json({ error: 'Usuario no autenticado' });
+    }
+
+    const entry = await entryService.getEntryById(id, req.user.id);
+    
+    if (!entry) {
+      return res.status(404).json({ error: 'Entrada no encontrada' });
+    }
+
+    res.json(entry);
+  } catch (error) {
+    console.error('Error en getEntryById:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateEntry = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.user || !req.user.id) {
+      return res.status(400).json({ error: 'Usuario no autenticado' });
+    }
+
+    const entry = await entryService.updateEntry(id, req.body, req.user.id);
+    
+    if (!entry) {
+      return res.status(404).json({ error: 'Entrada no encontrada' });
+    }
+
+    const moodSummary = moodAnalysisService.analyzeMoodTrends([entry]);
+    const reflection = await aiReflectionService.reflectOnEntry(entry);
+
+    res.json({ entry, moodSummary, reflection });
+  } catch (error) {
+    console.error('Error en updateEntry:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteEntry = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.user || !req.user.id) {
+      return res.status(400).json({ error: 'Usuario no autenticado' });
+    }
+
+    const deleted = await entryService.deleteEntry(id, req.user.id);
+    
+    if (!deleted) {
+      return res.status(404).json({ error: 'Entrada no encontrada' });
+    }
+
+    res.json({ message: 'Entrada eliminada correctamente', deletedEntry: deleted });
+  } catch (error) {
+    console.error('Error en deleteEntry:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.getEntriesByMonth = async (req, res) => {
   try {
     const { month, year } = req.query;

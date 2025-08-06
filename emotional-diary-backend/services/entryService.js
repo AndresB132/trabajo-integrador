@@ -10,6 +10,46 @@ async function createEntry(data, userId) {
   });
 }
 
+async function getEntryById(id, userId) {
+  return await DailyEntry.findOne({
+    where: {
+      id: id,
+      userId: userId,
+    },
+  });
+}
+
+async function updateEntry(id, data, userId) {
+  const entry = await DailyEntry.findOne({
+    where: {
+      id: id,
+      userId: userId,
+    },
+  });
+
+  if (!entry) {
+    return null;
+  }
+
+  return await entry.update(data);
+}
+
+async function deleteEntry(id, userId) {
+  const entry = await DailyEntry.findOne({
+    where: {
+      id: id,
+      userId: userId,
+    },
+  });
+
+  if (!entry) {
+    return null;
+  }
+
+  await entry.destroy();
+  return entry;
+}
+
 async function getEntriesByMonth(userId, month, year) {
   const lastDay = new Date(year, month, 0).getDate();
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
@@ -32,6 +72,9 @@ async function getMonthlySummary(userId, month, year) {
 
 module.exports = {
   createEntry,
+  getEntryById,
+  updateEntry,
+  deleteEntry,
   getEntriesByMonth,
   getMonthlySummary,
 };
