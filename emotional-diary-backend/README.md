@@ -1,4 +1,8 @@
-# ✅ Instrucciones para ejecutar el backend del "Diario Emocional"
+# Diario Emocional - Backend
+
+Este proyecto es una API REST para registrar, consultar y analizar entradas diarias de estado emocional. Permite a los usuarios llevar un diario, obtener estadísticas y tendencias de su estado de ánimo. Ideal para prácticas de desarrollo backend, manejo de bases de datos y pruebas automatizadas.
+
+---
 
 ## 1. 🧱 Requisitos previos
 
@@ -10,12 +14,13 @@
 
 ---
 
-## 2. 🔽 Descargar o clonar el proyecto 
+## 2. 🔽 Descargar o clonar el proyecto
 
 Si es un repositorio GitHub:
-git clone https://github.com/tu-usuario/emotional-diary-backend.git 
+```bash
+git clone https://github.com/tu-usuario/emotional-diary-backend.git
 cd emotional-diary-backend
-
+```
 Si es ZIP:
 Descomprimir en una carpeta local: emotional-diary-backend/
 
@@ -24,14 +29,15 @@ Descomprimir en una carpeta local: emotional-diary-backend/
 ## 3. 📦 Instalar dependencias del backend
 
 Ejecuta en terminal:
+```bash
 npm install
+```
 
-Estas son las principales dependencias usadas:
+Principales dependencias:
 - express
 - sequelize
 - pg (PostgreSQL)
 - cors, morgan, helmet
-- jsonwebtoken
 - bcryptjs
 - dotenv
 - nodemon (dev)
@@ -43,62 +49,76 @@ Estas son las principales dependencias usadas:
 ### a) Crea la base de datos:
 
 En terminal:
+```bash
 createdb emotional_diary
-
+```
 O desde psql:
+```sql
 psql -U postgres
 CREATE DATABASE emotional_diary;
 \q
+```
 
 ### b) Configura el archivo .env:
 
 Copia el ejemplo:
+```bash
 cp .env.example .env
-
+```
 Luego abre `.env` y ajusta credenciales si es necesario:
+```
 DATABASE_URL=postgres://<tu_usuario>:<tu_contrasena>@localhost:5432/emotional_diary
+```
 
 ---
 
 ## 5. ▶️ Iniciar servidor
 
 Para iniciar en modo desarrollo:
+```bash
 npm run dev
-
+```
 Para producción:
+```bash
 npm start
-
+```
 El servidor corre en:
-http://localhost:5000
+http://localhost:5001
 
 ---
 
-## 6. 🧪 Probar la API
+## 6. 📚 Documentación interactiva (Swagger)
 
-### Opción A: REST Client (en VS Code)
+Una vez que el servidor esté corriendo, puedes acceder a la documentación y probar los endpoints desde tu navegador en:
+
+http://localhost:5001/api-docs
+
+Aquí podrás ver todos los endpoints, sus parámetros y probarlos directamente.
+
+---
+
+## 7. 🚀 Probar la API con Postman
+
+1. Abre Postman.
+2. Haz clic en "Importar" y selecciona el archivo `postman_collection.json` de la carpeta del proyecto.
+3. Prueba los endpoints. **No necesitas agregar ningún token ni header especial.**
+
+---
+
+## 8. 🧪 Probar la API desde VS Code (REST Client)
 
 1. Abre el archivo `test.http` en VS Code.
 2. Haz clic en **"Send Request"** encima de cada bloque.
 
 ✅ Requisito: Tener instalada la extensión **REST Client**
 
-🔗 Link de descarga de la extensión:
-https://marketplace.visualstudio.com/items?itemName=humao.rest-client
-
-### Opción B: Postman 
-
-Importa una colección con estos endpoints:
-- Registro de usuario
-- Login
-- Registrar entrada diaria
-- Obtener resumen mensual
-
 ---
 
-## 7. 📋 Archivo test.http incluido
+## 9. 📋 Ejemplo de peticiones (sin token)
 
 ### Registro de usuario
-POST http://localhost:5000/api/auth/register
+```http
+POST http://localhost:5001/api/auth/register
 Content-Type: application/json
 
 {
@@ -106,22 +126,23 @@ Content-Type: application/json
   "email": "juan@example.com",
   "password": "123456"
 }
+```
 
 ### Inicio de sesión
-POST http://localhost:5000/api/auth/login
+```http
+POST http://localhost:5001/api/auth/login
 Content-Type: application/json
 
 {
   "email": "juan@example.com",
   "password": "123456"
 }
-
-Recibirás un token JWT que usarás en las siguientes peticiones.
+```
 
 ### Registrar entrada diaria
-POST http://localhost:5000/api/entries
+```http
+POST http://localhost:5001/api/entries
 Content-Type: application/json
-Authorization: Bearer TU_TOKEN_AQUÍ
 
 {
   "date": "2025-06-12",
@@ -129,61 +150,46 @@ Authorization: Bearer TU_TOKEN_AQUÍ
   "description": "Un día tranquilo.",
   "activities": ["meditar", "pasear"]
 }
+```
 
 ### Obtener resumen mensual
-GET http://localhost:5000/api/stats/summary?month=06&year=2025
-Authorization: Bearer TU_TOKEN_AQUÍ
+```http
+GET http://localhost:5001/api/stats/summary?month=06&year=2025
+```
 
+---
 
-### test 
-dependencias usadas 
-- mocha
-- chai
-- sinon
-
-Instálalas con el siguiente comando:
-npm install --save-dev mocha chai sinon
-
-Si deseas medir cobertura de código esto es opcional 
-npm install --save-dev nyc
-
-## 📁 Ubicación de las pruebas
+## 10. 🧪 Pruebas automatizadas
 
 Las pruebas están ubicadas en la carpeta:
+```
 /test/
-  └── authController.test.js
+```
+Incluyen controladores y servicios principales.
 
-Estas pruebas cubren los siguientes métodos:
-- register (registro de usuario)
-- login (inicio de sesión)
+### Ejecutar las pruebas
+Desde la raíz del proyecto en la terminal ejecuta:
+```bash
+npm test
+```
 
-se usaron mocks para evitar tocar directamente la base de datos o los servicios externos ya sea (JWT o bcrypt)
+Si deseas medir cobertura de código (opcional):
+```bash
+npm run test:coverage
+```
 
-## 🧪 Ejecutar las pruebas
+---
 
-Desde la raiz del proyecto en la terminal ejecuta : npm test
-se podra observar la salida del auth controller 
-Auth Controller Tests
-    register
-      ✔ debe registrar un usuario exitosamente y devolver token
-      ✔ debe manejar errores durante el registro (148ms)
-    login
-      ✔ debe iniciar sesión si el correo y contraseña coinciden
-      ✔ debe devolver error si el usuario no existe
-      ✔ debe devolver error si la contraseña es incorrecta
-      ✔ debe manejar errores internos
+## 11. 📝 Notas finales
 
-opcional si se quiere ver el % del codigo ejecuta : npm run test:coverage
+- No necesitas token ni autenticación para probar los endpoints.
+- Puedes usar Postman, REST Client o Swagger UI para probar la API.
+- Si usas Docker, puedes levantar todo con:
+```bash
+docker-compose up
+```
+- Si tienes dudas, revisa los comentarios en el código y la documentación Swagger.
 
+---
 
---------------------------|---------|----------|---------|---------|-------------------
-File                      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
---------------------------|---------|----------|---------|---------|-------------------
-controllers/authController.js |   100   |    100   |   100   |   100   |
-
-aparecera esto al ejecutar el comando 
-yo le realice del metodo register y login que va en la carpeta authController 
-
-- Cubren todos los casos posibles:
-  - Caso feliz (funcionamiento esperado)
-  - Errores (usuario no encontrado, contraseña incorrecta, errores internos)
+¡Listo! Tu proyecto está preparado para ser presentado y probado fácilmente.

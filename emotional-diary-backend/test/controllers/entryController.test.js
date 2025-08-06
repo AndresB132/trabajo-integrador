@@ -12,7 +12,7 @@ describe('entryController', () => {
 
   beforeEach(() => {
     sandbox = sinon.createSandbox();
-
+    sandbox.stub(console, 'error'); // Oculta los errores en consola durante los tests
     req = {
       body: { description: 'Test entry', emotion_score: 5 },
       user: { id: 123 },

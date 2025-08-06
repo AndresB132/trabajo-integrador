@@ -8,6 +8,7 @@ describe('Auth Controller Tests', () => {
   let req, res;
 
   beforeEach(() => {
+    sinon.stub(console, 'error'); // Oculta los errores en consola durante los tests
     req = { body: {} };
     res = {
       status: sinon.stub().returnsThis(),

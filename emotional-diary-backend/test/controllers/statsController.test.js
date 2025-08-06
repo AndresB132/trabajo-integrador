@@ -11,7 +11,7 @@ describe('statsController.getMonthlySummary', () => {
 
   beforeEach(() => {
     sandbox = sinon.createSandbox();
-
+    sandbox.stub(console, 'error'); // Oculta los errores en consola durante los tests
     req = {
       query: {},
       user: { id: 123 },
@@ -49,7 +49,10 @@ describe('statsController.getMonthlySummary', () => {
     const fakeStats = {
       total_days: 2,
       average_emotion: '6.00',
-      weekly_averages: [],
+      weekly_averages: [
+        { average: "5.00", week: 1 },
+        { average: "7.00", week: 5 }
+      ],
       entries: fakeEntries,
     };
 
@@ -64,7 +67,8 @@ describe('statsController.getMonthlySummary', () => {
     const where = DailyEntry.findAll.getCall(0).args[0].where;
     expect(where.userId).to.equal(123);
     expect(where.date).to.have.property(Op.between);
-    expect(jsonStub.calledWith(fakeStats)).to.be.true;
+    // Comparación robusta del objeto completo
+    expect(jsonStub.firstCall.args[0]).to.deep.equal(fakeStats);
   });
 
   it('debería manejar errores internos (500)', async () => {

@@ -1,9 +1,10 @@
+
 const express = require('express');
 const router = express.Router();
-const { createEntry, getEntriesByMonth } = require('../controllers/entryController');
+const authController = require('../controllers/authController');
 
-// Ya no usamos middleware JWT
-router.post('/entries', createEntry);
-router.get('/entries', getEntriesByMonth);
+// Rutas de autenticación
+router.post('/register', authController.register);
+router.post('/login', authController.login);
 
 module.exports = router;

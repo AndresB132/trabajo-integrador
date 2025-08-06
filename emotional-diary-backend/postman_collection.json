@@ -1,0 +1,220 @@
+{
+  "info": {
+    "name": "Diario Emocional Backend",
+    "description": "API del backend del diario emocional",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5001/api",
+      "type": "string"
+    },
+    {
+      "key": "entry_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Autenticación",
+      "item": [
+        {
+          "name": "Registrar Usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"test_user\",\n  \"email\": \"test@ejemplo.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@ejemplo.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📝 Entradas",
+      "item": [
+        {
+          "name": "Crear Entrada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mood\": \"feliz\",\n  \"description\": \"Día productivo\",\n  \"activities\": [\"trabajo\", \"ejercicio\"],\n  \"energyLevel\": 8,\n  \"stressLevel\": 2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/entries",
+              "host": ["{{base_url}}"],
+              "path": ["entries"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Entradas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/entries",
+              "host": ["{{base_url}}"],
+              "path": ["entries"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Entrada Específica",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/entries/{{entry_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["entries", "{{entry_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar Entrada",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mood\": \"tranquilo\",\n  \"description\": \"Actualización\",\n  \"activities\": [\"lectura\", \"música\"],\n  \"energyLevel\": 6,\n  \"stressLevel\": 3\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/entries/{{entry_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["entries", "{{entry_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar Entrada",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/entries/{{entry_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["entries", "{{entry_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📊 Estadísticas",
+      "item": [
+        {
+          "name": "Estadísticas Generales",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/stats",
+              "host": ["{{base_url}}"],
+              "path": ["stats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tendencias de Estado de Ánimo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/stats/mood-trends",
+              "host": ["{{base_url}}"],
+              "path": ["stats", "mood-trends"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔍 Pruebas",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test Base de Datos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test-db",
+              "host": ["{{base_url}}"],
+              "path": ["test-db"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+} 

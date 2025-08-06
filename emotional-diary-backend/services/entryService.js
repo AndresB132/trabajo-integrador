@@ -6,7 +6,7 @@ const { calculateMonthlyStats } = require('../utils/calculateStats');
 async function createEntry(data, userId) {
   return await DailyEntry.create({
     ...data,
-    userId: userId, // ✅ Usa userId
+    userId: userId, // Revertido a userId
   });
 }
 
@@ -17,7 +17,7 @@ async function getEntriesByMonth(userId, month, year) {
 
   return await DailyEntry.findAll({
     where: {
-      userId: userId, // ✅ Usa userId
+      userId: userId, // Revertido a userId
       date: {
         [Op.between]: [startDate, endDate],
       },
