@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { getMonthlySummary } = require('../controllers/statsController');
+const { authenticateUser } = require('../middleware/auth');
 
-// router.use(authenticateJWT); // comentar o eliminar
+// Usar middleware de autenticación
+router.use(authenticateUser);
 
-router.get('/summary', getMonthlySummary);
+router.get('/monthly', getMonthlySummary); // GET /api/stats/monthly
 
 module.exports = router;

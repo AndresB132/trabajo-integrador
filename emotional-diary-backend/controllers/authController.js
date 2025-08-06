@@ -5,6 +5,16 @@ const { User } = require('../models');
 exports.register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
+    
+    // Validaciones básicas
+    if (!username || !email || !password) {
+      return res.status(400).json({ 
+        error: 'Todos los campos son requeridos',
+        required: ['username', 'email', 'password'],
+        received: { username, email, password: password ? '***' : undefined }
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ username, email, password: hashedPassword });
 
@@ -14,6 +24,27 @@ exports.register = async (req, res) => {
     // Respondemos solo con el usuario
     res.status(201).json({ user });
   } catch (error) {
+    console.error('Error en registro:', error);
+    
+    // Manejar errores específicos de Sequelize
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ 
+        error: 'Error de validación',
+        details: error.errors.map(e => ({
+          field: e.path,
+          message: e.message,
+          value: e.value
+        }))
+      });
+    }
+    
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ 
+        error: 'El email ya está registrado',
+        field: 'email'
+      });
+    }
+
     res.status(500).json({ error: error.message });
   }
 };
@@ -21,6 +52,14 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    // Validaciones básicas
+    if (!email || !password) {
+      return res.status(400).json({ 
+        error: 'Email y contraseña son requeridos' 
+      });
+    }
+
     const user = await User.findOne({ where: { email } });
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 
@@ -32,6 +71,7 @@ exports.login = async (req, res) => {
 
     res.json({ user });
   } catch (error) {
+    console.error('Error en login:', error);
     res.status(500).json({ error: error.message });
   }
 };
