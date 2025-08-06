@@ -78,13 +78,12 @@ describe('entryService', () => {
         entries: fakeEntries,
       };
 
-      const getEntriesStub = sinon.stub(entryService, 'getEntriesByMonth').resolves(fakeEntries);
-      // No stubeamos calculateMonthlyStats, usamos la función real
+      // Hacer stub de DailyEntry.findAll para simular la base de datos
+      const findAllStub = sinon.stub(DailyEntry, 'findAll').resolves(fakeEntries);
 
       const result = await entryService.getMonthlySummary(userId, month, year);
 
-      // Solo verificamos que el stub fue llamado una vez y el resultado es el esperado
-      expect(getEntriesStub.called).to.be.true;
+      expect(findAllStub.calledOnce).to.be.true;
       expect(result).to.deep.equal(expectedStats);
     });
   });
