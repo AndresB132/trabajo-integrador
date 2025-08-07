@@ -32,6 +32,108 @@ describe('entryService', () => {
     });
   });
 
+  describe('getEntryById', () => {
+    it('debería devolver una entrada específica por id y userId', async () => {
+      const fakeEntry = { id: 1, description: 'test', userId: 123 };
+      const id = 1;
+      const userId = 123;
+
+      const findOneStub = sinon.stub(DailyEntry, 'findOne').resolves(fakeEntry);
+
+      const result = await entryService.getEntryById(id, userId);
+
+      expect(findOneStub.calledOnce).to.be.true;
+      expect(findOneStub.firstCall.args[0]).to.deep.equal({
+        where: {
+          id: id,
+          userId: userId,
+        },
+      });
+      expect(result).to.equal(fakeEntry);
+    });
+
+    it('debería devolver null cuando no encuentra la entrada', async () => {
+      const id = 999;
+      const userId = 123;
+
+      const findOneStub = sinon.stub(DailyEntry, 'findOne').resolves(null);
+
+      const result = await entryService.getEntryById(id, userId);
+
+      expect(findOneStub.calledOnce).to.be.true;
+      expect(result).to.be.null;
+    });
+  });
+
+  describe('updateEntry', () => {
+    it('debería actualizar una entrada existente', async () => {
+      const fakeEntry = { 
+        id: 1, 
+        description: 'test', 
+        userId: 123,
+        update: sinon.stub().resolves({ id: 1, description: 'updated', userId: 123 })
+      };
+      const id = 1;
+      const userId = 123;
+      const updateData = { description: 'updated' };
+
+      const findOneStub = sinon.stub(DailyEntry, 'findOne').resolves(fakeEntry);
+
+      const result = await entryService.updateEntry(id, updateData, userId);
+
+      expect(findOneStub.calledOnce).to.be.true;
+      expect(fakeEntry.update.calledOnce).to.be.true;
+      expect(fakeEntry.update.firstCall.args[0]).to.deep.equal(updateData);
+      expect(result).to.deep.equal({ id: 1, description: 'updated', userId: 123 });
+    });
+
+    it('debería devolver null cuando no encuentra la entrada para actualizar', async () => {
+      const id = 999;
+      const userId = 123;
+      const updateData = { description: 'updated' };
+
+      const findOneStub = sinon.stub(DailyEntry, 'findOne').resolves(null);
+
+      const result = await entryService.updateEntry(id, updateData, userId);
+
+      expect(findOneStub.calledOnce).to.be.true;
+      expect(result).to.be.null;
+    });
+  });
+
+  describe('deleteEntry', () => {
+    it('debería eliminar una entrada existente', async () => {
+      const fakeEntry = { 
+        id: 1, 
+        description: 'test', 
+        userId: 123,
+        destroy: sinon.stub().resolves()
+      };
+      const id = 1;
+      const userId = 123;
+
+      const findOneStub = sinon.stub(DailyEntry, 'findOne').resolves(fakeEntry);
+
+      const result = await entryService.deleteEntry(id, userId);
+
+      expect(findOneStub.calledOnce).to.be.true;
+      expect(fakeEntry.destroy.calledOnce).to.be.true;
+      expect(result).to.equal(fakeEntry);
+    });
+
+    it('debería devolver null cuando no encuentra la entrada para eliminar', async () => {
+      const id = 999;
+      const userId = 123;
+
+      const findOneStub = sinon.stub(DailyEntry, 'findOne').resolves(null);
+
+      const result = await entryService.deleteEntry(id, userId);
+
+      expect(findOneStub.calledOnce).to.be.true;
+      expect(result).to.be.null;
+    });
+  });
+
   describe('getEntriesByMonth', () => {
     it('debería devolver las entradas entre las fechas calculadas', async () => {
       const userId = 123;
@@ -46,6 +148,30 @@ describe('entryService', () => {
       const lastDay = new Date(year, month, 0).getDate();
       const startDate = `${year}-06-01`;
       const endDate = `${year}-06-${lastDay}`;
+
+      expect(findAllStub.calledOnce).to.be.true;
+      expect(findAllStub.firstCall.args[0]).to.deep.include({
+        where: {
+          userId: userId,
+          date: { [Op.between]: [startDate, endDate] },
+        },
+      });
+      expect(result).to.equal(fakeEntries);
+    });
+
+    it('debería manejar correctamente meses con diferentes números de días', async () => {
+      const userId = 123;
+      const month = 2; // Febrero
+      const year = 2024;
+
+      const fakeEntries = [{ id: 1 }];
+      const findAllStub = sinon.stub(DailyEntry, 'findAll').resolves(fakeEntries);
+
+      const result = await entryService.getEntriesByMonth(userId, month, year);
+
+      const lastDay = new Date(year, month, 0).getDate();
+      const startDate = `${year}-02-01`;
+      const endDate = `${year}-02-${lastDay}`;
 
       expect(findAllStub.calledOnce).to.be.true;
       expect(findAllStub.firstCall.args[0]).to.deep.include({

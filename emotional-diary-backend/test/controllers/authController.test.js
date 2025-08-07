@@ -37,6 +37,75 @@ describe('Auth Controller Tests', () => {
       expect(res.json.calledWith({ user: userInstance })).to.be.true;
     });
 
+    it('debe devolver 400 si faltan campos requeridos', async () => {
+      req.body = { username: 'test' }; // Falta email y password
+
+      await authController.register(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith(sinon.match.has('error', 'Todos los campos son requeridos'))).to.be.true;
+    });
+
+    it('debe devolver 400 si falta username', async () => {
+      req.body = { email: 'test@example.com', password: '123456' };
+
+      await authController.register(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith(sinon.match.has('error', 'Todos los campos son requeridos'))).to.be.true;
+    });
+
+    it('debe devolver 400 si falta email', async () => {
+      req.body = { username: 'test', password: '123456' };
+
+      await authController.register(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith(sinon.match.has('error', 'Todos los campos son requeridos'))).to.be.true;
+    });
+
+    it('debe devolver 400 si falta password', async () => {
+      req.body = { username: 'test', email: 'test@example.com' };
+
+      await authController.register(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith(sinon.match.has('error', 'Todos los campos son requeridos'))).to.be.true;
+    });
+
+    it('debe manejar errores de validación de Sequelize', async () => {
+      const validationError = new Error('Validation error');
+      validationError.name = 'SequelizeValidationError';
+      validationError.errors = [
+        { path: 'email', message: 'Email inválido', value: 'invalid-email' }
+      ];
+
+      sinon.stub(bcrypt, 'hash').resolves('hashed-password');
+      sinon.stub(User, 'create').rejects(validationError);
+
+      req.body = { username: 'test', email: 'invalid-email', password: '123456' };
+
+      await authController.register(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith(sinon.match.has('error', 'Error de validación'))).to.be.true;
+    });
+
+    it('debe manejar errores de constraint único de Sequelize', async () => {
+      const uniqueError = new Error('Unique constraint error');
+      uniqueError.name = 'SequelizeUniqueConstraintError';
+
+      sinon.stub(bcrypt, 'hash').resolves('hashed-password');
+      sinon.stub(User, 'create').rejects(uniqueError);
+
+      req.body = { username: 'test', email: 'existing@example.com', password: '123456' };
+
+      await authController.register(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith(sinon.match.has('error', 'El email ya está registrado'))).to.be.true;
+    });
+
     it('debe manejar errores durante el registro', async () => {
       const error = new Error('Error en DB');
       sinon.stub(User, 'create').rejects(error);
@@ -76,6 +145,33 @@ describe('Auth Controller Tests', () => {
       expect(bcrypt.compare.calledOnce).to.be.true;
       expect(res.json.calledOnce).to.be.true;
       expect(res.json.calledWith({ user: userData })).to.be.true;
+    });
+
+    it('debe devolver 400 si falta email', async () => {
+      req.body = { password: '123456' };
+
+      await authController.login(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith({ error: 'Email y contraseña son requeridos' })).to.be.true;
+    });
+
+    it('debe devolver 400 si falta password', async () => {
+      req.body = { email: 'test@example.com' };
+
+      await authController.login(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith({ error: 'Email y contraseña son requeridos' })).to.be.true;
+    });
+
+    it('debe devolver 400 si faltan email y password', async () => {
+      req.body = {};
+
+      await authController.login(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith({ error: 'Email y contraseña son requeridos' })).to.be.true;
     });
 
     it('debe devolver error si el usuario no existe', async () => {
