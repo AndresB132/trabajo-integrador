@@ -1,27 +1,29 @@
 // test/controllers/statsController.test.js
+
 const { expect } = require('chai');
 const sinon = require('sinon');
 const statsController = require('../../controllers/statsController');
-const { DailyEntry } = require('../../models');
-const statsUtils = require('../../utils/calculateStats');
-const { Op } = require('sequelize');
+const statsService = require('../../services/statsService');
 
-describe('statsController.getMonthlySummary', () => {
-  let req, res, jsonStub, statusStub, sandbox;
+describe('statsController', () => {
+  let req, res, sandbox;
+
+  before(function () {
+    sinon.stub(console, 'error');
+  });
+  after(function () {
+    console.error.restore();
+  });
 
   beforeEach(() => {
     sandbox = sinon.createSandbox();
-    sandbox.stub(console, 'error'); // Oculta los errores en consola durante los tests
     req = {
-      query: {},
       user: { id: 123 },
+      query: {}
     };
-
-    jsonStub = sandbox.stub();
-    statusStub = sandbox.stub().returns({ json: jsonStub });
     res = {
-      status: statusStub,
-      json: jsonStub,
+      status: sandbox.stub().returnsThis(),
+      json: sandbox.stub()
     };
   });
 
@@ -29,57 +31,164 @@ describe('statsController.getMonthlySummary', () => {
     sandbox.restore();
   });
 
-  it('debería devolver 400 si la fecha es inválida', async () => {
-    req.query = { month: '13', year: '2024' };
+  describe('getMonthlySummary', () => {
+    it('debería devolver 400 si la fecha es inválida', async () => {
+      req.query = { month: '13', year: '2024' }; // Mes inválido
 
-    await statsController.getMonthlySummary(req, res);
+      sandbox.stub(statsService, 'getMonthlySummary').rejects(new Error('Fecha inválida'));
 
-    expect(statusStub.calledWith(400)).to.be.true;
-    expect(jsonStub.calledWith({ error: 'Fecha inválida' })).to.be.true;
+      await statsController.getMonthlySummary(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith({ error: 'Fecha inválida' })).to.be.true;
+    });
+
+    it('debería devolver estadísticas correctamente (happy path)', async () => {
+      req.query = { month: '6', year: '2024' };
+
+      const fakeStats = {
+        total_days: 30,
+        average_emotion: '6.50',
+        weekly_averages: []
+      };
+
+      sandbox.stub(statsService, 'getMonthlySummary').resolves(fakeStats);
+
+      await statsController.getMonthlySummary(req, res);
+
+      expect(statsService.getMonthlySummary.calledWith(123, '6', '2024')).to.be.true;
+      expect(res.json.calledWith(fakeStats)).to.be.true;
+    });
+
+    it('debería devolver 400 si el usuario no está autenticado', async () => {
+      req.user = undefined;
+      req.query = { month: '6', year: '2024' };
+
+      await statsController.getMonthlySummary(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith({ error: 'Usuario no autenticado' })).to.be.true;
+    });
+
+    it('debería manejar errores internos (500)', async () => {
+      req.query = { month: '6', year: '2024' };
+
+      sandbox.stub(statsService, 'getMonthlySummary').rejects(new Error('Error interno'));
+
+      await statsController.getMonthlySummary(req, res);
+
+      expect(res.status.calledWith(500)).to.be.true;
+      expect(res.json.calledWith({ error: 'Error al obtener el resumen mensual' })).to.be.true;
+    });
   });
 
-  it('debería devolver estadísticas correctamente (happy path)', async () => {
-    req.query = { month: '06', year: '2025' };
+  describe('getYearlySummary', () => {
+    it('debería devolver estadísticas anuales correctamente', async () => {
+      req.query = { year: '2024' };
 
-    const fakeEntries = [
-      { emotion_score: 7, date: '2025-06-01' },
-      { emotion_score: 5, date: '2025-06-02' },
-    ];
+      const fakeYearlyStats = {
+        year: 2024,
+        totalEntries: 365,
+        monthlyStats: {},
+        averageMood: 6.5
+      };
 
-    const fakeStats = {
-      total_days: 2,
-      average_emotion: '6.00',
-      weekly_averages: [
-        { average: "5.00", week: 1 },
-        { average: "7.00", week: 5 }
-      ],
-      entries: fakeEntries,
-    };
+      sandbox.stub(statsService, 'getYearlySummary').resolves(fakeYearlyStats);
 
-    // Stub para simular la consulta a la base de datos
-    sandbox.stub(DailyEntry, 'findAll').resolves(fakeEntries);
-    // Stub para la función que calcula las estadísticas
-    sandbox.stub(statsUtils, 'calculateMonthlyStats').returns(fakeStats);
+      await statsController.getYearlySummary(req, res);
 
-    await statsController.getMonthlySummary(req, res);
+      expect(statsService.getYearlySummary.calledWith(123, '2024')).to.be.true;
+      expect(res.json.calledWith(fakeYearlyStats)).to.be.true;
+    });
 
-    // Verificamos que el filtro where use userId en camelCase
-    const where = DailyEntry.findAll.getCall(0).args[0].where;
-    expect(where.userId).to.equal(123);
-    expect(where.date).to.have.property(Op.between);
-    // Comparación robusta del objeto completo
-    expect(jsonStub.firstCall.args[0]).to.deep.equal(fakeStats);
+    it('debería devolver 400 si el año es inválido', async () => {
+      req.query = { year: '1800' }; // Año inválido
+
+      sandbox.stub(statsService, 'getYearlySummary').rejects(new Error('Año inválido'));
+
+      await statsController.getYearlySummary(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith({ error: 'Año inválido' })).to.be.true;
+    });
+
+    it('debería devolver 400 si el usuario no está autenticado', async () => {
+      req.user = undefined;
+      req.query = { year: '2024' };
+
+      await statsController.getYearlySummary(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith({ error: 'Usuario no autenticado' })).to.be.true;
+    });
+
+    it('debería manejar errores internos (500)', async () => {
+      req.query = { year: '2024' };
+
+      sandbox.stub(statsService, 'getYearlySummary').rejects(new Error('Error interno'));
+
+      await statsController.getYearlySummary(req, res);
+
+      expect(res.status.calledWith(500)).to.be.true;
+      expect(res.json.calledWith({ error: 'Error al obtener el resumen anual' })).to.be.true;
+    });
   });
 
-  it('debería manejar errores internos (500)', async () => {
-    req.query = { month: '06', year: '2025' };
+  describe('getMoodTrends', () => {
+    it('debería devolver tendencias de humor correctamente', async () => {
+      req.query = { days: '30' };
 
-    const error = new Error('DB fail');
-    sandbox.stub(DailyEntry, 'findAll').rejects(error);
+      const fakeTrends = {
+        moodCounts: { 5: 10, 7: 15, 8: 5 },
+        dailyMoods: { '2024-06-01': 5, '2024-06-02': 7 },
+        totalDays: 30,
+        averageMood: 6.5
+      };
 
-    await statsController.getMonthlySummary(req, res);
+      sandbox.stub(statsService, 'getMoodTrends').resolves(fakeTrends);
 
-    expect(statusStub.calledWith(500)).to.be.true;
-    expect(jsonStub.calledWith({ error: 'Error al obtener el resumen mensual' })).to.be.true;
+      await statsController.getMoodTrends(req, res);
+
+      expect(statsService.getMoodTrends.calledWith(123, 30)).to.be.true;
+      expect(res.json.calledWith(fakeTrends)).to.be.true;
+    });
+
+    it('debería usar 30 días por defecto si no se especifica', async () => {
+      req.query = {}; // Sin parámetro days
+
+      const fakeTrends = {
+        moodCounts: { 5: 10, 7: 15 },
+        totalDays: 30,
+        averageMood: 6.0
+      };
+
+      sandbox.stub(statsService, 'getMoodTrends').resolves(fakeTrends);
+
+      await statsController.getMoodTrends(req, res);
+
+      expect(statsService.getMoodTrends.calledWith(123, 30)).to.be.true;
+      expect(res.json.calledWith(fakeTrends)).to.be.true;
+    });
+
+    it('debería devolver 400 si el usuario no está autenticado', async () => {
+      req.user = undefined;
+      req.query = { days: '30' };
+
+      await statsController.getMoodTrends(req, res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWith({ error: 'Usuario no autenticado' })).to.be.true;
+    });
+
+    it('debería manejar errores internos (500)', async () => {
+      req.query = { days: '30' };
+
+      sandbox.stub(statsService, 'getMoodTrends').rejects(new Error('Error interno'));
+
+      await statsController.getMoodTrends(req, res);
+
+      expect(res.status.calledWith(500)).to.be.true;
+      expect(res.json.calledWith({ error: 'Error al obtener las tendencias de humor' })).to.be.true;
+    });
   });
 });

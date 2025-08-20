@@ -1,28 +1,31 @@
 // test/controllers/entryController.test.js
+
 const { expect } = require('chai');
 const sinon = require('sinon');
 const entryController = require('../../controllers/entryController');
 const entryService = require('../../services/entryService');
-const moodAnalysisService = require('../../services/moodAnalysisService');
-const aiReflectionService = require('../../services/aiReflectionService');
-const notificationService = require('../../services/notificationService');
 
 describe('entryController', () => {
   let req, res, sandbox;
 
+  before(function () {
+    sinon.stub(console, 'error');
+  });
+  after(function () {
+    console.error.restore();
+  });
+
   beforeEach(() => {
     sandbox = sinon.createSandbox();
-    sandbox.stub(console, 'error'); // Oculta los errores en consola durante los tests
     req = {
-      body: { description: 'Test entry', emotion_score: 5 },
       user: { id: 123 },
-      query: { month: '6', year: '2025' },
+      body: { description: 'Test entry', mood: 5 },
       params: { id: '1' },
+      query: { month: '6', year: '2024' }
     };
-
     res = {
       status: sandbox.stub().returnsThis(),
-      json: sandbox.stub(),
+      json: sandbox.stub()
     };
   });
 
@@ -32,23 +35,19 @@ describe('entryController', () => {
 
   describe('createEntry', () => {
     it('debería crear una entrada y devolver moodSummary y reflection (caso feliz)', async () => {
-      const fakeEntry = { id: 1, ...req.body, userId: req.user.id };
-      const fakeMoodSummary = { estadoActual: 'neutral', promedioEmocional: '5.00' };
-      const fakeReflection = 'Reflexión IA generada';
+      const fakeResult = {
+        entry: { id: 1, description: 'Test entry', userId: 123 },
+        moodSummary: { estadoActual: 'neutral', promedioEmocional: '5.00' },
+        reflection: { entradaAnalizada: true, mensajeReflexivo: 'Gracias por compartir tu día.' }
+      };
 
-      sandbox.stub(entryService, 'createEntry').resolves(fakeEntry);
-      sandbox.stub(moodAnalysisService, 'analyzeMoodTrends').returns(fakeMoodSummary);
-      sandbox.stub(aiReflectionService, 'reflectOnEntry').resolves(fakeReflection);
-      sandbox.stub(notificationService, 'sendNotification').resolves();
+      sandbox.stub(entryService, 'createEntry').resolves(fakeResult);
 
       await entryController.createEntry(req, res);
 
       expect(entryService.createEntry.calledWith(req.body, req.user.id)).to.be.true;
-      expect(moodAnalysisService.analyzeMoodTrends.calledWith([fakeEntry])).to.be.true;
-      expect(aiReflectionService.reflectOnEntry.calledWith(fakeEntry)).to.be.true;
-      expect(notificationService.sendNotification.calledOnce).to.be.true;
       expect(res.status.calledWith(201)).to.be.true;
-      expect(res.json.calledWith(sinon.match.has('moodSummary'))).to.be.true;
+      expect(res.json.calledWith(fakeResult)).to.be.true;
     });
 
     it('debería devolver 400 si el usuario no está autenticado', async () => {
@@ -113,20 +112,18 @@ describe('entryController', () => {
 
   describe('updateEntry', () => {
     it('debería actualizar una entrada y devolver moodSummary y reflection (caso feliz)', async () => {
-      const fakeEntry = { id: 1, description: 'Updated entry', userId: 123 };
-      const fakeMoodSummary = { estadoActual: 'neutral', promedioEmocional: '5.00' };
-      const fakeReflection = 'Reflexión IA generada';
+      const fakeResult = {
+        entry: { id: 1, description: 'Updated entry', userId: 123 },
+        moodSummary: { estadoActual: 'neutral', promedioEmocional: '5.00' },
+        reflection: { entradaAnalizada: true, mensajeReflexivo: 'Gracias por compartir tu día.' }
+      };
 
-      sandbox.stub(entryService, 'updateEntry').resolves(fakeEntry);
-      sandbox.stub(moodAnalysisService, 'analyzeMoodTrends').returns(fakeMoodSummary);
-      sandbox.stub(aiReflectionService, 'reflectOnEntry').resolves(fakeReflection);
+      sandbox.stub(entryService, 'updateEntry').resolves(fakeResult);
 
       await entryController.updateEntry(req, res);
 
       expect(entryService.updateEntry.calledWith('1', req.body, req.user.id)).to.be.true;
-      expect(moodAnalysisService.analyzeMoodTrends.calledWith([fakeEntry])).to.be.true;
-      expect(aiReflectionService.reflectOnEntry.calledWith(fakeEntry)).to.be.true;
-      expect(res.json.calledWith(sinon.match.has('moodSummary'))).to.be.true;
+      expect(res.json.calledWith(fakeResult)).to.be.true;
     });
 
     it('debería devolver 400 si el usuario no está autenticado', async () => {
@@ -203,17 +200,20 @@ describe('entryController', () => {
 
   describe('getEntriesByMonth', () => {
     it('debería devolver las entradas del mes (caso feliz)', async () => {
-      const fakeEntries = [{ id: 1 }, { id: 2 }];
+      const fakeEntries = [
+        { id: 1, description: 'Entry 1', userId: 123 },
+        { id: 2, description: 'Entry 2', userId: 123 }
+      ];
       sandbox.stub(entryService, 'getEntriesByMonth').resolves(fakeEntries);
 
       await entryController.getEntriesByMonth(req, res);
 
-      expect(entryService.getEntriesByMonth.calledWith(req.user.id, 6, 2025)).to.be.true;
+      expect(entryService.getEntriesByMonth.calledWith(req.user.id, 6, 2024)).to.be.true;
       expect(res.json.calledWith(fakeEntries)).to.be.true;
     });
 
     it('debería devolver 400 si faltan mes o año', async () => {
-      req.query = { month: '6' };
+      req.query = { month: '6' }; // Falta year
 
       await entryController.getEntriesByMonth(req, res);
 
@@ -222,7 +222,7 @@ describe('entryController', () => {
     });
 
     it('debería devolver 400 si el usuario no está autenticado', async () => {
-      req.user = null;
+      req.user = undefined;
 
       await entryController.getEntriesByMonth(req, res);
 
@@ -243,17 +243,21 @@ describe('entryController', () => {
 
   describe('getMonthlySummary', () => {
     it('debería devolver el resumen mensual (caso feliz)', async () => {
-      const fakeSummary = { total_days: 30, average_emotion: '7.00', weekly_averages: [] };
+      const fakeSummary = {
+        total_days: 30,
+        average_emotion: '6.50',
+        weekly_averages: []
+      };
       sandbox.stub(entryService, 'getMonthlySummary').resolves(fakeSummary);
 
       await entryController.getMonthlySummary(req, res);
 
-      expect(entryService.getMonthlySummary.calledWith(req.user.id, 6, 2025)).to.be.true;
+      expect(entryService.getMonthlySummary.calledWith(req.user.id, 6, 2024)).to.be.true;
       expect(res.json.calledWith(fakeSummary)).to.be.true;
     });
 
     it('debería devolver 400 si faltan mes o año', async () => {
-      req.query = { year: '2025' };
+      req.query = { year: '2024' }; // Falta month
 
       await entryController.getMonthlySummary(req, res);
 

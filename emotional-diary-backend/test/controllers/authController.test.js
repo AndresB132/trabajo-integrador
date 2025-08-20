@@ -1,120 +1,153 @@
+// test/controllers/authController.test.js
+
 const { expect } = require('chai');
 const sinon = require('sinon');
-const bcrypt = require('bcryptjs');
-const { User } = require('../../models');
 const authController = require('../../controllers/authController');
+const authService = require('../../services/authService');
 
 describe('Auth Controller Tests', () => {
-  let req, res;
+  let req, res, sandbox;
+
+  before(function () {
+    sinon.stub(console, 'error');
+  });
+  after(function () {
+    console.error.restore();
+  });
 
   beforeEach(() => {
-    sinon.stub(console, 'error'); // Oculta los errores en consola durante los tests
-    req = { body: {} };
+    sandbox = sinon.createSandbox();
+    req = {
+      body: {}
+    };
     res = {
-      status: sinon.stub().returnsThis(),
-      json: sinon.stub(),
+      status: sandbox.stub().returnsThis(),
+      json: sandbox.stub()
     };
   });
 
-  afterEach(() => sinon.restore());
+  afterEach(() => {
+    sandbox.restore();
+  });
 
   describe('register', () => {
     it('debe registrar un usuario exitosamente sin token', async () => {
-      const userData = { username: 'test', email: 'test@example.com', password: '123456' };
-      const hashedPassword = 'hashed-password';
-      const userInstance = { id: 1, ...userData };
+      const userData = {
+        username: 'testuser',
+        email: 'test@example.com',
+        password: '123456'
+      };
 
-      sinon.stub(bcrypt, 'hash').resolves(hashedPassword);
-      sinon.stub(User, 'create').resolves(userInstance);
+      const userInstance = {
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com'
+      };
 
       req.body = userData;
+      
+      sandbox.stub(authService, 'register').resolves(userInstance);
+      
       await authController.register(req, res);
 
-      expect(bcrypt.hash.calledWith(userData.password, 10)).to.be.true;
-      expect(User.create.calledOnce).to.be.true;
+      expect(authService.register.calledWith(userData)).to.be.true;
       expect(res.status.calledWith(201)).to.be.true;
-      expect(res.json.calledOnce).to.be.true;
       expect(res.json.calledWith({ user: userInstance })).to.be.true;
     });
 
     it('debe devolver 400 si faltan campos requeridos', async () => {
       req.body = { username: 'test' }; // Falta email y password
 
+      sandbox.stub(authService, 'register').rejects(new Error('Todos los campos son requeridos'));
+
       await authController.register(req, res);
 
       expect(res.status.calledWith(400)).to.be.true;
-      expect(res.json.calledWith(sinon.match.has('error', 'Todos los campos son requeridos'))).to.be.true;
+      expect(res.json.calledWith({ 
+        error: 'Todos los campos son requeridos',
+        required: ['username', 'email', 'password']
+      })).to.be.true;
     });
 
     it('debe devolver 400 si falta username', async () => {
       req.body = { email: 'test@example.com', password: '123456' };
 
+      sandbox.stub(authService, 'register').rejects(new Error('Todos los campos son requeridos'));
+
       await authController.register(req, res);
 
       expect(res.status.calledWith(400)).to.be.true;
-      expect(res.json.calledWith(sinon.match.has('error', 'Todos los campos son requeridos'))).to.be.true;
+      expect(res.json.calledWith({ 
+        error: 'Todos los campos son requeridos',
+        required: ['username', 'email', 'password']
+      })).to.be.true;
     });
 
     it('debe devolver 400 si falta email', async () => {
       req.body = { username: 'test', password: '123456' };
 
+      sandbox.stub(authService, 'register').rejects(new Error('Todos los campos son requeridos'));
+
       await authController.register(req, res);
 
       expect(res.status.calledWith(400)).to.be.true;
-      expect(res.json.calledWith(sinon.match.has('error', 'Todos los campos son requeridos'))).to.be.true;
+      expect(res.json.calledWith({ 
+        error: 'Todos los campos son requeridos',
+        required: ['username', 'email', 'password']
+      })).to.be.true;
     });
 
     it('debe devolver 400 si falta password', async () => {
       req.body = { username: 'test', email: 'test@example.com' };
 
+      sandbox.stub(authService, 'register').rejects(new Error('Todos los campos son requeridos'));
+
       await authController.register(req, res);
 
       expect(res.status.calledWith(400)).to.be.true;
-      expect(res.json.calledWith(sinon.match.has('error', 'Todos los campos son requeridos'))).to.be.true;
+      expect(res.json.calledWith({ 
+        error: 'Todos los campos son requeridos',
+        required: ['username', 'email', 'password']
+      })).to.be.true;
     });
 
     it('debe manejar errores de validación de Sequelize', async () => {
-      const validationError = new Error('Validation error');
-      validationError.name = 'SequelizeValidationError';
-      validationError.errors = [
-        { path: 'email', message: 'Email inválido', value: 'invalid-email' }
-      ];
-
-      sinon.stub(bcrypt, 'hash').resolves('hashed-password');
-      sinon.stub(User, 'create').rejects(validationError);
-
       req.body = { username: 'test', email: 'invalid-email', password: '123456' };
+
+      sandbox.stub(authService, 'register').rejects(new Error('Todos los campos son requeridos'));
 
       await authController.register(req, res);
 
       expect(res.status.calledWith(400)).to.be.true;
-      expect(res.json.calledWith(sinon.match.has('error', 'Error de validación'))).to.be.true;
+      expect(res.json.calledWith({ 
+        error: 'Todos los campos son requeridos',
+        required: ['username', 'email', 'password']
+      })).to.be.true;
     });
 
     it('debe manejar errores de constraint único de Sequelize', async () => {
-      const uniqueError = new Error('Unique constraint error');
-      uniqueError.name = 'SequelizeUniqueConstraintError';
-
-      sinon.stub(bcrypt, 'hash').resolves('hashed-password');
-      sinon.stub(User, 'create').rejects(uniqueError);
-
       req.body = { username: 'test', email: 'existing@example.com', password: '123456' };
+
+      sandbox.stub(authService, 'register').rejects(new Error('El email ya está registrado'));
 
       await authController.register(req, res);
 
       expect(res.status.calledWith(400)).to.be.true;
-      expect(res.json.calledWith(sinon.match.has('error', 'El email ya está registrado'))).to.be.true;
+      expect(res.json.calledWith({ 
+        error: 'El email ya está registrado',
+        field: 'email'
+      })).to.be.true;
     });
 
     it('debe manejar errores durante el registro', async () => {
       const error = new Error('Error en DB');
-      sinon.stub(User, 'create').rejects(error);
-
       req.body = {
         username: 'test',
         email: 'test@example.com',
         password: '123456',
       };
+
+      sandbox.stub(authService, 'register').rejects(error);
 
       await authController.register(req, res);
 
@@ -124,31 +157,31 @@ describe('Auth Controller Tests', () => {
   });
 
   describe('login', () => {
-    const userData = {
-      id: 1,
-      email: 'test@example.com',
-      password: 'hashed-password',
-    };
-    const reqBody = {
-      email: 'test@example.com',
-      password: '123456',
-    };
-
     it('debe iniciar sesión si el correo y contraseña coinciden sin token', async () => {
-      sinon.stub(bcrypt, 'compare').resolves(true);
-      sinon.stub(User, 'findOne').resolves(userData);
+      const userData = {
+        email: 'test@example.com',
+        password: '123456'
+      };
 
-      req.body = reqBody;
+      const userInstance = {
+        id: 1,
+        email: 'test@example.com'
+      };
+
+      req.body = userData;
+      
+      sandbox.stub(authService, 'login').resolves(userInstance);
+      
       await authController.login(req, res);
 
-      expect(User.findOne.calledOnce).to.be.true;
-      expect(bcrypt.compare.calledOnce).to.be.true;
-      expect(res.json.calledOnce).to.be.true;
-      expect(res.json.calledWith({ user: userData })).to.be.true;
+      expect(authService.login.calledWith(userData)).to.be.true;
+      expect(res.json.calledWith({ user: userInstance })).to.be.true;
     });
 
     it('debe devolver 400 si falta email', async () => {
       req.body = { password: '123456' };
+
+      sandbox.stub(authService, 'login').rejects(new Error('Email y contraseña son requeridos'));
 
       await authController.login(req, res);
 
@@ -159,6 +192,8 @@ describe('Auth Controller Tests', () => {
     it('debe devolver 400 si falta password', async () => {
       req.body = { email: 'test@example.com' };
 
+      sandbox.stub(authService, 'login').rejects(new Error('Email y contraseña son requeridos'));
+
       await authController.login(req, res);
 
       expect(res.status.calledWith(400)).to.be.true;
@@ -168,6 +203,8 @@ describe('Auth Controller Tests', () => {
     it('debe devolver 400 si faltan email y password', async () => {
       req.body = {};
 
+      sandbox.stub(authService, 'login').rejects(new Error('Email y contraseña son requeridos'));
+
       await authController.login(req, res);
 
       expect(res.status.calledWith(400)).to.be.true;
@@ -175,27 +212,35 @@ describe('Auth Controller Tests', () => {
     });
 
     it('debe devolver error si el usuario no existe', async () => {
-      sinon.stub(User, 'findOne').resolves(null);
-      req.body = reqBody;
+      req.body = { email: 'noexiste@example.com', password: '123456' };
+
+      sandbox.stub(authService, 'login').rejects(new Error('Usuario no encontrado'));
+
       await authController.login(req, res);
+
       expect(res.status.calledWith(404)).to.be.true;
-      expect(res.json.calledWith({ message: 'Usuario no encontrado' })).to.be.true;
+      expect(res.json.calledWith({ error: 'Usuario no encontrado' })).to.be.true;
     });
 
     it('debe devolver error si la contraseña es incorrecta', async () => {
-      sinon.stub(bcrypt, 'compare').resolves(false);
-      sinon.stub(User, 'findOne').resolves(userData);
-      req.body = reqBody;
+      req.body = { email: 'test@example.com', password: 'wrongpass' };
+
+      sandbox.stub(authService, 'login').rejects(new Error('Contraseña incorrecta'));
+
       await authController.login(req, res);
+
       expect(res.status.calledWith(400)).to.be.true;
-      expect(res.json.calledWith({ message: 'Contraseña incorrecta' })).to.be.true;
+      expect(res.json.calledWith({ error: 'Contraseña incorrecta' })).to.be.true;
     });
 
     it('debe manejar errores internos', async () => {
-      const error = new Error('Internal server error');
-      sinon.stub(User, 'findOne').rejects(error);
-      req.body = reqBody;
+      const error = new Error('Error interno');
+      req.body = { email: 'test@example.com', password: '123456' };
+
+      sandbox.stub(authService, 'login').rejects(error);
+
       await authController.login(req, res);
+
       expect(res.status.calledWith(500)).to.be.true;
       expect(res.json.calledWith({ error: error.message })).to.be.true;
     });

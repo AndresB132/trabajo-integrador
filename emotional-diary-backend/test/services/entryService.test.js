@@ -4,11 +4,16 @@ const { Op } = require('sequelize');
 
 const entryService = require('../../services/entryService');
 const { DailyEntry } = require('../../models');
-const statsUtils = require('../../utils/calculateStats'); // import con destructuring
+const statsUtils = require('../../utils/calculateStats');
+
+// Mock de los servicios externos
+const moodAnalysisService = require('../../services/moodAnalysisService');
+const aiReflectionService = require('../../services/aiReflectionService');
+const notificationService = require('../../services/notificationService');
 
 describe('entryService', () => {
   beforeEach(() => {
-    sinon.stub(console, 'error'); // Oculta los errores en consola durante los tests
+    sinon.stub(console, 'error');
   });
 
   afterEach(() => {
@@ -21,6 +26,18 @@ describe('entryService', () => {
       const data = { description: 'test' };
       const userId = 123;
 
+      // Mock de los servicios externos
+      sinon.stub(moodAnalysisService, 'analyzeMoodTrends').returns({
+        estadoActual: 'neutral',
+        promedioEmocional: 'NaN',
+        totalEntradas: 1
+      });
+      sinon.stub(aiReflectionService, 'reflectOnEntry').resolves({
+        entradaAnalizada: true,
+        mensajeReflexivo: 'Gracias por compartir tu día.'
+      });
+      sinon.stub(notificationService, 'sendNotification').resolves(true);
+
       const createStub = sinon.stub(DailyEntry, 'create').resolves(fakeEntry);
 
       const result = await entryService.createEntry(data, userId);
@@ -28,7 +45,12 @@ describe('entryService', () => {
       expect(createStub.calledOnce).to.be.true;
       expect(createStub.firstCall.args[0]).to.include(data);
       expect(createStub.firstCall.args[0].userId).to.equal(userId);
-      expect(result).to.equal(fakeEntry);
+      
+      // Ahora el resultado incluye entry, moodSummary y reflection
+      expect(result).to.have.property('entry');
+      expect(result).to.have.property('moodSummary');
+      expect(result).to.have.property('reflection');
+      expect(result.entry).to.equal(fakeEntry);
     });
   });
 
@@ -77,6 +99,17 @@ describe('entryService', () => {
       const userId = 123;
       const updateData = { description: 'updated' };
 
+      // Mock de los servicios externos
+      sinon.stub(moodAnalysisService, 'analyzeMoodTrends').returns({
+        estadoActual: 'neutral',
+        promedioEmocional: 'NaN',
+        totalEntradas: 1
+      });
+      sinon.stub(aiReflectionService, 'reflectOnEntry').resolves({
+        entradaAnalizada: true,
+        mensajeReflexivo: 'Gracias por compartir tu día.'
+      });
+
       const findOneStub = sinon.stub(DailyEntry, 'findOne').resolves(fakeEntry);
 
       const result = await entryService.updateEntry(id, updateData, userId);
@@ -84,7 +117,12 @@ describe('entryService', () => {
       expect(findOneStub.calledOnce).to.be.true;
       expect(fakeEntry.update.calledOnce).to.be.true;
       expect(fakeEntry.update.firstCall.args[0]).to.deep.equal(updateData);
-      expect(result).to.deep.equal({ id: 1, description: 'updated', userId: 123 });
+      
+      // Ahora el resultado incluye entry, moodSummary y reflection
+      expect(result).to.have.property('entry');
+      expect(result).to.have.property('moodSummary');
+      expect(result).to.have.property('reflection');
+      expect(result.entry.description).to.equal('updated');
     });
 
     it('debería devolver null cuando no encuentra la entrada para actualizar', async () => {
@@ -204,13 +242,33 @@ describe('entryService', () => {
         entries: fakeEntries,
       };
 
-      // Hacer stub de DailyEntry.findAll para simular la base de datos
       const findAllStub = sinon.stub(DailyEntry, 'findAll').resolves(fakeEntries);
 
       const result = await entryService.getMonthlySummary(userId, month, year);
 
       expect(findAllStub.calledOnce).to.be.true;
       expect(result).to.deep.equal(expectedStats);
+    });
+  });
+
+  describe('getAllEntries', () => {
+    it('debería devolver todas las entradas de un usuario ordenadas por fecha', async () => {
+      const userId = 123;
+      const fakeEntries = [
+        { id: 1, date: '2024-06-02' },
+        { id: 2, date: '2024-06-01' }
+      ];
+
+      const findAllStub = sinon.stub(DailyEntry, 'findAll').resolves(fakeEntries);
+
+      const result = await entryService.getAllEntries(userId);
+
+      expect(findAllStub.calledOnce).to.be.true;
+      expect(findAllStub.firstCall.args[0]).to.deep.include({
+        where: { userId },
+        order: [['date', 'DESC']]
+      });
+      expect(result).to.equal(fakeEntries);
     });
   });
 });
